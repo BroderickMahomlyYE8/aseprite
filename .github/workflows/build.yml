@@ -4,119 +4,117 @@ on: [push, pull_request]
 
 jobs:
 
-  build:
+  build:
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-    strategy:
+    strategy:
 
-      fail-fast: false
+      fail-fast: false
 
-      matrix:
+      matrix:
 
-        os: [windows-latest]
+        os: [windows-latest]
 
-        build_type: [Release]
+        build_type: [Release]
 
-        enable_ui: [on]
+        enable_ui: [on]
 
-        include:
+    steps:
 
-          - os: windows-latest
+    - uses: actions/checkout@v3
 
-            build_type: Release
+      with:
 
-            enable_ui: on
+        submodules: 'recursive'
 
-    steps:
+    - name: ccache
 
-    - uses: actions/checkout@v3
+      uses: hendrikmuhs/ccache-action@v1
 
-      with:
+      if: runner.os == 'Linux'
 
-        submodules: 'recursive'
+      with:
 
-    - name: ccache
+        key: ${{ matrix.os }}-${{ matrix.enable_ui }}
 
-      uses: hendrikmuhs/ccache-action@v1
+    - uses: seanmiddleditch/gha-setup-ninja@master
 
-      if: runner.os == 'Linux'
+    - uses: ilammy/msvc-dev-cmd@v1
 
-      with:
+      if: runner.os == 'Windows'
 
-        key: ${{ matrix.os }}-${{ matrix.enable_ui }}
+    - name: Install Dependencies
 
-    - uses: seanmiddleditch/gha-setup-ninja@master
+      shell: bash
 
-    - uses: ilammy/msvc-dev-cmd@v1
+      run: |
 
-      if: runner.os == 'Windows'
+        if [[ "${{ matrix.os }}" == "Linux" ]] ; then
 
-    - name: Install Dependencies
+          sudo apt-get update -qq
 
-      shell: bash
+          sudo apt-get install -y \
 
-      run: |
+            libx11-dev libxcursor-dev libxi-dev
 
-        if [[ "${{ runner.os }}" == "Linux" ]] ; then
+        fi
 
-          sudo apt-get update -qq
+    - name: Generating Makefiles
 
-          sudo apt-get install -y \
+      shell: bash
 
-            libx11-dev libxcursor-dev libxi-dev
+      run: |
 
-        fi
+        if [[ "${{ matrix.os }}" == "Windows" ]] ; then
 
-    - name: Generating Makefiles
+          export enable_ccache=off
 
-      shell: bash
+        else
 
-      run: |
+          export enable_ccache=on
 
-        if [[ "${{ runner.os }}" == "Windows" ]] ; then
+        fi
 
-          export enable_ccache=off
+        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/skia.zip --output skia.zip
 
-        else
+        7z x skia.zip
 
-          export enable_ccache=on
+        cmake -S . -B build -G Ninja \
 
-        fi
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
 
-        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/skia.zip --output skia.zip
+          -DENABLE_UI=${{ matrix.enable_ui }} \
 
-        7z x skia.zip
+          -DENABLE_CCACHE=$enable_ccache \
 
-        cmake -S . -B build -G Ninja \
+          -DLAF_BACKEND=skia \
 
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DSKIA_DIR=./skia \
 
-          -DENABLE_UI=${{ matrix.enable_ui }} \
+          -DSKIA_LIBRARY_DIR=./skia/out/Release-x64 \
 
-          -DENABLE_CCACHE=$enable_ccache \
+          -DSKIA_LIBRARY=./skia/out/Release-x64/skia.lib
 
-          -DLAF_BACKEND=skia \
+    - name: Compiling
 
-          -DSKIA_DIR=./skia \
+      shell: bash
 
-          -DSKIA_LIBRARY_DIR=./skia/out/Release-x64 \
+      run: |
 
-          -DSKIA_LIBRARY=./skia/out/Release-x64/skia.lib
+        cd build && ninja
 
-    - name: Compiling
+    - uses: actions/upload-artifact@v3
 
-      shell: bash
+      with:
 
-      run: |
+        name: aseprite
 
-        cd build && ninja
+        path: |
 
-    - uses: actions/upload-artifact@v3
+          c:/a/aseprite/aseprite/build/bin/data
 
-      with:
-
-        name: aseprite
+          c:/a/aseprite/aseprite/build/bin/aseprite.exe
 
         path: |
 
