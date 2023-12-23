@@ -110,6 +110,5 @@ jobs:
         name: aseprite
 
         path: |
-
           d:/a/aseprite/aseprite/build/bin/data
           d:/a/aseprite/aseprite/build/bin/aseprite.exe
