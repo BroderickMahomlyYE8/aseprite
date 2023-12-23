@@ -111,6 +111,5 @@ jobs:
 
         path: |
 
-          c:/a/aseprite/aseprite/build/bin/data
-
-          c:/a/aseprite/aseprite/build/bin/aseprite.exe
+          d:/a/aseprite/aseprite/build/bin/data
+          d:/a/aseprite/aseprite/build/bin/aseprite.exe
